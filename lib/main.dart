@@ -1,5 +1,5 @@
-import 'dart:typed_data'; // Add this import statement for Uint8List
-
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -26,9 +26,15 @@ class VideoCompressionScreen extends StatefulWidget {
 }
 
 class _VideoCompressionScreenState extends State<VideoCompressionScreen> {
-  List<Uint8List> selectedVideos = []; // Use Uint8List type for selectedVideos
+  List<String> selectedVideos = [];
+  String _outputDirectory = '';
 
-  // Function to pick videos
+  @override
+  void initState() {
+    super.initState();
+    _outputDirectory = '${Directory.current.path}/Processed_videos';
+  }
+
   Future<void> pickVideos() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -40,19 +46,31 @@ class _VideoCompressionScreenState extends State<VideoCompressionScreen> {
         result.files.forEach((file) {
           print('Name: ${file.name}');
           print('Size: ${file.size}');
-          // Use bytes property instead of path on web
-          print('Bytes length: ${file.bytes!.length}');
           print('-------------');
         });
-        // Use bytes property instead of path on web
         setState(() {
-          selectedVideos = result.files.map((file) => file.bytes!).toList();
+          selectedVideos = result.files.map((file) => file.path!).toList();
         });
       } else {
         print('No files picked.');
       }
     } catch (e) {
       print("Error while picking videos: $e");
+    }
+  }
+
+  Future<void> processVideos(String mode) async {
+    for (var i = 0; i < selectedVideos.length; i++) {
+      final originalFileName = selectedVideos[i].split('/').last;
+      final outputFileName = '$_outputDirectory/${originalFileName.split('.')[0]}_$mode.mp4';
+
+      // Placeholder logic to demonstrate processing
+      print('Processing $mode video: $originalFileName');
+      // Simulate processing delay
+      await Future.delayed(Duration(seconds: 2));
+      print('Completed processing $mode video: $originalFileName');
+      print('Output file: $outputFileName');
+      print('-------------');
     }
   }
 
@@ -66,17 +84,26 @@ class _VideoCompressionScreenState extends State<VideoCompressionScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ElevatedButton(
-            onPressed: pickVideos,
+            onPressed: () async {
+              await pickVideos();
+            },
             child: Text('Select Videos'),
+          ),
+          ElevatedButton(
+            onPressed: () => processVideos('compressed'),
+            child: Text('Compress Videos'),
+          ),
+          ElevatedButton(
+            onPressed: () => processVideos('decompressed'),
+            child: Text('Decompress Videos'),
           ),
           Expanded(
             child: ListView.builder(
               itemCount: selectedVideos.length,
               itemBuilder: (context, index) {
-                final video = selectedVideos[index];
+                String video = selectedVideos[index];
                 return ListTile(
-                  title: Text('Video ${index + 1}'),
-                  subtitle: Text('Size: ${video.length} bytes'),
+                  title: Text(video.split('/').last),
                 );
               },
             ),
